@@ -29,6 +29,9 @@ def offer_screen():
     deal_button.pack()
     no_deal_button = tkinter.Button(root, text="No Deal!", command=make_no_deal)
     no_deal_button.pack()
+    spacer = tkinter.Label(root, text="", pady=4)
+    spacer.pack()
+    displayCases()
 
 
 def choiceCallback(selection):
@@ -56,11 +59,11 @@ class Case(object):
 
     def __str__(self):
         if self.revealed:
-            s = f"<{self.amount}>"
+            s = f"${self.amount}"
         elif self.chosen:
             s = f"[Your Case]"
         else:
-            s = f"[{self.number}]"
+            s = f"[case {self.number}]"
         return s
 
 
@@ -140,6 +143,11 @@ def drawCases():
             case.choose()
         cases.append(case)
 
+def displayCases():
+    global cases
+    for case in cases:
+        case_label = tkinter.Label(root, text=case)
+        case_label.pack()
 
 def number_revealed():
     global cases
