@@ -4,6 +4,7 @@ import tkinter
 
 global choice, root, cases, amounts
 choice = None
+cases = []
 
 def switch_screens():
     global chooseBoxLabel, confirmBox, chooseBoxMenu, deal_button, offer_label
@@ -62,10 +63,17 @@ def make_deal():
     
 def make_choice():
     global chooseBoxLabel, confirmBox, chooseBoxMenu, deal_button
+
+    nrevealed = number_revealed()
+    if nrevealed < 8:
+        n_to_reveal = 8 - nrevealed
+
     chooseBoxLabel = tkinter.Label(
         root,
-        text = """Welcome to Deal or No Deal!
+        text = f"""Welcome to Deal or No Deal!
         Choose your case, 1-10 with amounts $1-$1000
+
+        Choose {n_to_reveal} cases to reveal.
         """)
     boxChoice = tkinter.StringVar()
     boxChoiceList = range(1,11)
@@ -85,6 +93,15 @@ def drawCases():
         if choice == i:
             case.choose()
         cases.append(case)
+
+
+def number_revealed():
+    global cases
+    n = 0
+    for case in cases:
+        if case.revealed:
+            n = n + 1
+    return n
  
 class Game(object):
 
