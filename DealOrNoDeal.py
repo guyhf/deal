@@ -1,77 +1,22 @@
 import random
 import tkinter
 
-#put globals into dictionary that holds game settings
-
-global choice, root, cases, amounts
-choice = None
-cases = []
-
-class Game(object):
-    def __init__(self, amounts):
-        self.root = tkinter.Tk()
-        self.amounts = list(amounts)
-        random.shuffle(self.amounts)
-        self.offer_var = tkinter.StringVar()
-        self.offer_var.set(f"Offer is $0")
-        self.offer_label = tkinter.Label(root, textvariable=offer_var)
-        self.instruction_var = tkinter.StringVar()
-        self.instruction_var.set("Choose 4 cases to eliminate")
-        self.instruction_label = tkinter.Label(root, textvariable=instruction_var)
-        self.spacer = tkinter.Label(root, text="", pady=4)
-        self.num_to_choose = 4
-
-    def run(self):
-        self.root.mainloop()
-
-
-
-def switch_screens():
-    global chooseBoxLabel, confirmBox, chooseBoxMenu, deal_button, offer_label, instruction_label
-    chooseBoxLabel.pack_forget()
-    confirmBox.pack_forget()
-    chooseBoxMenu.pack_forget()
-    drawCases()
-    update_offer()
-    spacer.pack()
-    #spacer is for formatting
-    instruction_label.pack()
-
-def offer_screen():
-    global root, offer_label, offer_var
-    for widget in root.winfo_children():
-       widget.destroy()
-    
-    offer_label = tkinter.Label(root,
-        textvariable=offer_var)
-    offer_label.pack()
-    deal_button = tkinter.Button(root, text="Deal!", command=make_deal)
-    deal_button.pack()
-    no_deal_button = tkinter.Button(root, text="No Deal!", command=make_no_deal)
-    no_deal_button.pack()
-    spacer = tkinter.Label(root, text="", pady=4)
-    spacer.pack()
-    displayCases()
-
-
-def choiceCallback(selection):
-    global choice, num_to_choose, instruction_var
-    choice = selection
 
 class Case(object):
-    def __init__(self, number, amount, update_offer):
+    def __init__(self, number, amount, game):
         self.number = number
         self.amount = amount
         self.revealed = False
         self.chosen = False
-        self.button = tkinter.Button(root, text = str(self.number), command=self.reveal)
-        self.update_offer = update_offer
+        self.game = game
+        self.button = tkinter.Button(self.game.root, text = str(self.number), command=self.reveal)
+        self.update_offer = game.update_offer
 
     def reveal(self):
         if not self.chosen:
             self.revealed = True
             self.button.config(text = f"[ ${str(self.amount)} ]")
-            self.update_offer()
+            self.game.update_offer()
 
     def choose(self):
         self.chosen = True
@@ -96,11 +41,37 @@ class Case(object):
 class Game(object):
 
     def __init__(self, amounts) -> None:
-        shuffled = list(amounts)
-        random.shuffle(shuffled)
-        self.cases = [Case(i, val) for i, val in enumerate(shuffled, 1)]
         self.deal = False
         self.offer = 0
+        self.root = tkinter.Tk()
+        self.amounts = list(amounts)
+        self.offer_var = tkinter.StringVar()
+        self.offer_var.set(f"Offer is $0")
+        self.offer_label = tkinter.Label(self.root, textvariable=self.offer_var)
+        self.instruction_var = tkinter.StringVar()
+        self.instruction_var.set("Choose 4 cases to eliminate")
+        self.instruction_label = tkinter.Label(self.root, textvariable=self.instruction_var)
+        self.spacer = tkinter.Label(self.root, text="", pady=4)
+        self.num_to_choose = 4
+        self.shuffled = list(amounts)
+        random.shuffle(self.amounts)
+        self.cases = []
+        self.setup()
+
+    def run(self):
+        self.root.mainloop()
+
+    def switch_screens(self):
+        self.chooseBoxLabel.pack_forget()
+        self.confirmBox.pack_forget()
+        self.chooseBoxMenu.pack_forget()
+        self.drawCases()
+        self.update_offer()
+        self.spacer.pack()
+        #spacer is for formatting
+        self.instruction_label.pack()
+
+
 
     def __str__(self) -> str:
         return "-".join([str(c) for c in self.cases])
@@ -123,13 +94,17 @@ class Game(object):
             case_label = tkinter.Label(self.root, text=case)
             case_label.pack()
 
+    def choiceCallback(self, selection):
+        self.choice = selection
+
     def drawCases(self):
-        for i, amount in enumerate(amounts, 1):
-            case = Case(i, amount, self.update_offer)
+        self.cases = []
+        for i, amount in enumerate(self.amounts, 1):
+            case = Case(i, amount, self)
             case.button.pack()
-            if choice == i:
+            if self.choice == i:
                 case.choose()
-            cases.append(case)
+            self.cases.append(case)
 
     def end(self):
         self.root.destroy()
@@ -142,17 +117,17 @@ class Game(object):
                 total += c.amount
                 count += 1
         self.offer = round((total / count) * random.uniform(.8, .9))
-        offer_var.set(f"Offer is ${offer}")
+        self.offer_var.set(f"Offer is ${self.offer}")
         nrevealed = self.number_revealed()
-        remaining = num_to_choose - nrevealed
+        remaining = self.num_to_choose - nrevealed
         if remaining == 0:
             self.offer_screen()
         else:
-            instruction_var.set(f"Choose {remaining} cases")
+            self.instruction_var.set(f"Choose {remaining} cases")
 
     def setup(self):
-        root.title("Deal or No Deal!")
-        root.geometry("800x800")
+        self.root.title("Deal or No Deal!")
+        self.root.geometry("800x800")
         self.choose_case()
 
     def choose_case(self):
@@ -160,17 +135,33 @@ class Game(object):
         if nrevealed < 8:
             n_to_reveal = 8 - nrevealed
         self.chooseBoxLabel = tkinter.Label(
-            root,
+            self.root,
             text = """Welcome to Deal or No Deal!
             Choose your case, 1-10 with amounts $1-$1000
             """)
         boxChoice = tkinter.StringVar()
         boxChoiceList = range(1,11)
-        self.chooseBoxMenu = tkinter.OptionMenu(root, boxChoice, *boxChoiceList, command = choiceCallback)
+        self.chooseBoxMenu = tkinter.OptionMenu(self.root, boxChoice, *boxChoiceList, command = self.choiceCallback)
         self.chooseBoxLabel.pack()
         self.chooseBoxMenu.pack(expand=True)
-        self.confirmBox = tkinter.Button(root, text = "Confirm", command = switch_screens)
+        self.confirmBox = tkinter.Button(self.root, text = "Confirm", command = self.switch_screens)
         self.confirmBox.pack()
+
+    def offer_screen(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        
+        self.offer_label = tkinter.Label(self.root,
+                                         textvariable=self.offer_var)
+        self.offer_label.pack()
+        self.deal_button = tkinter.Button(self.root, text="Deal!", command=self.make_deal)
+        self.deal_button.pack()
+        no_deal_button = tkinter.Button(self.root, text="No Deal!", command=self.make_no_deal)
+        no_deal_button.pack()
+        spacer = tkinter.Label(self.root, text="", pady=4)
+        spacer.pack()
+        self.displayCases()
+
 
     def make_deal(self):
         newWindow = tkinter.Toplevel(self.root)
@@ -204,14 +195,16 @@ class Game(object):
             text =f"You win ${your_case.amount}").pack()
 
         tkinter.Label(newWindow,
-            text =f"You turned down a deal for ${offer}").pack()
+            text =f"You turned down a deal for ${self.offer}").pack()
 
         # A Label widget to show in toplevel
         tkinter.Label(newWindow,
             text ="Thanks for playing!").pack()
 
-        tkinter.Button(newWindow, text = "Done", command = end).pack()
+        tkinter.Button(newWindow, text = "Done", command = self.end).pack()
 
 
 
-game = Game()
+amounts = [1,2,5,10,25,50,100,250,500,1000]
+game = Game(amounts)
+game.run()
